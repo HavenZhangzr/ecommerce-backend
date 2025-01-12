@@ -1,4 +1,5 @@
-const port = 4000;
+// const port = 4000;
+const port = process.env.PORT || 4000;
 const express = require("express");
 const app = express();
 const mongoose = require('mongoose');
@@ -64,13 +65,18 @@ app.get("/", (req,res)=>{
 */
 //第一段代码 (multer.diskStorage) 是 配置文件的存储方式，包括文件的保存路径 (destination) 和命名规则 (filename)。
 //是服务器端的配置（给服务器用的，定义了如何处理上传的文件：存储在哪个文件夹、命名规则等，主要是确保文件存储的方式正确。）
+// const storage = multer.diskStorage({
+//     destination: './upload/images',
+//     filename: (req, file, cb) => {
+//       return cb(null, `${file.fieldname}_${Date.now()}${path.extname(file.originalname)}`)
+//     }
+// })
 const storage = multer.diskStorage({
     destination: './upload/images',
     filename: (req, file, cb) => {
       return cb(null, `${file.fieldname}_${Date.now()}${path.extname(file.originalname)}`)
     }
-})
-
+  })
 
 const upload = multer({ storage: storage })
 
@@ -84,13 +90,18 @@ const upload = multer({ storage: storage })
 app.use('/images', express.static('upload/images'))
 
 //第二个（出来客户端的post请求）
+// app.post("/upload", upload.single('product'), (req, res) => {
+//     res.json({
+//       success: 1,
+//       image_url: `http://localhost:${port}/images/${req.file.filename}`//响应信息：上传成功后，服务器返回包含 image_url（图像的访问 URL）的 JSON 响应，客户端可以根据这个 URL 获取上传的图像。
+//     })
+// })
 app.post("/upload", upload.single('product'), (req, res) => {
     res.json({
       success: 1,
-      image_url: `http://localhost:${port}/images/${req.file.filename}`//响应信息：上传成功后，服务器返回包含 image_url（图像的访问 URL）的 JSON 响应，客户端可以根据这个 URL 获取上传的图像。
+      image_url: `/images/${req.file.filename}`
     })
-})
-
+  })
 // Schema for Creating Products
 
 const Product = mongoose.model("Product",{
