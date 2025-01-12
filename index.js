@@ -5,6 +5,7 @@ const app = express();
 const mongoose = require('mongoose');
 const jwt = require("jsonwebtoken");
 const multer = require("multer");
+const cloudinary = require('cloudinary').v2;
 const path = require("path");
 const cors = require("cors");
 // const { error } = require("console");
@@ -57,6 +58,12 @@ app.get("/", (req,res)=>{
 })
 
 // Image Storage Engine
+// Cloudinary 配置
+cloudinary.config({
+    cloud_name: 'dyvh2bes2',
+    api_key: '958613993464563',
+    api_secret: 'VNr0XXg2l8DQEN9o6ZZe0PrEpqc'
+});
 /* 
 假设上传了一个名为 example.png 的文件：
 文件存储路径：upload/images/
@@ -65,18 +72,12 @@ app.get("/", (req,res)=>{
 */
 //第一段代码 (multer.diskStorage) 是 配置文件的存储方式，包括文件的保存路径 (destination) 和命名规则 (filename)。
 //是服务器端的配置（给服务器用的，定义了如何处理上传的文件：存储在哪个文件夹、命名规则等，主要是确保文件存储的方式正确。）
-// const storage = multer.diskStorage({
-//     destination: './upload/images',
-//     filename: (req, file, cb) => {
-//       return cb(null, `${file.fieldname}_${Date.now()}${path.extname(file.originalname)}`)
-//     }
-// })
 const storage = multer.diskStorage({
     destination: './upload/images',
     filename: (req, file, cb) => {
       return cb(null, `${file.fieldname}_${Date.now()}${path.extname(file.originalname)}`)
     }
-  })
+})
 
 const upload = multer({ storage: storage })
 
@@ -87,7 +88,7 @@ const upload = multer({ storage: storage })
 第二个 app.post("/upload", ...) 是处理客户端上传文件的请求，文件会被存储到服务器的指定位置，上传后服务器返回上传文件的 URL，客户端可以通过这个 URL 获取文件。
 */
 //第一个(注册中间件express.static，只用于/images路径的请求)
-app.use('/images', express.static('upload/images'))
+// app.use('/images', express.static('upload/images'))
 
 //第二个（出来客户端的post请求）
 // app.post("/upload", upload.single('product'), (req, res) => {
@@ -96,12 +97,27 @@ app.use('/images', express.static('upload/images'))
 //       image_url: `http://localhost:${port}/images/${req.file.filename}`//响应信息：上传成功后，服务器返回包含 image_url（图像的访问 URL）的 JSON 响应，客户端可以根据这个 URL 获取上传的图像。
 //     })
 // })
-app.post("/upload", upload.single('product'), (req, res) => {
-    res.json({
-      success: 1,
-      image_url: `/images/${req.file.filename}`
-    })
-  })
+// app.post("/upload", upload.single('product'), (req, res) => {
+//     res.json({
+//       success: 1,
+//       image_url: `/images/${req.file.filename}`
+//     })
+//   })
+app.post("/upload", upload.single('product'), async (req, res) => {
+    try {
+      // 上传到 Cloudinary
+      const result = await cloudinary.uploader.upload(req.file.path);
+      res.json({
+        success: 1,
+        image_url: result.secure_url  // 返回 Cloudinary 图片的 URL
+      });
+    } catch (err) {
+      res.status(500).send({ error: '上传失败' });
+    }
+  });
+
+
+
 // Schema for Creating Products
 
 const Product = mongoose.model("Product",{
